@@ -131,6 +131,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['artikel_id'])) {
 
     $bestellverlauf = holeBestellverlauf($conn, $kunde_id);
 
+    $sql_code = "SELECT zugangscode FROM kunden WHERE id = ?";
+    $stmt_code = $conn->prepare($sql_code);
+    $stmt_code->bind_param("i", $kunde_id);
+    $stmt_code->execute();
+    $stmt_code->bind_result($kunde_zugangscode);
+    $stmt_code->fetch();
+    $stmt_code->close();
+
+    // Zuerst den Namen des Artikels holen
+    $sql_art = "SELECT name FROM artikel WHERE id = ?";
+    $stmt_art = $conn->prepare($sql_art);
+    $stmt_art->bind_param("i", $artikel_id);
+    $stmt_art->execute();
+    $stmt_art->bind_result($artikel_name);
+    $stmt_art->fetch();
+    $stmt_art->close();
+
+    // Daten für den Web-Server vorbereiten
+    $post_data = [
+        'api_key'      => 'Spatzennest2018',
+        'kunde_name'   => $kunde['name'],
+        'zugangscode'  => $kunde_zugangscode,
+        'artikel_name' => $artikel_name,
+        'preis'        => $artikel_preis,
+        'datum'        => date('Y-m-d H:i:s')
+    ];
+
+    // cURL Request an web.de
+    $ch = curl_init('https://spatzennest-leutenbach.de/Kundenansicht/api_receive.php');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Kurzes Timeout
+    curl_exec($ch);
+    curl_close($ch);
+
     echo json_encode([
         'kontostand' => formatPreis($neuer_kontostand),
         'bestellverlauf' => $bestellverlauf,

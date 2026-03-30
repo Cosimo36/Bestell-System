@@ -14,14 +14,15 @@ $error = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $name = trim($_POST['name'] ?? '');
     $tisch_id = (int)($_POST['tisch'] ?? 0);
+    $zugangscode = (string) mt_rand(100, 999);
 
     if ($name === '') {
         $error = "Bitte gib einen Namen ein.";
     } elseif ($tisch_id <= 0) {
         $error = "Ungültige Tisch-ID.";
     } else {
-        $stmt = $conn->prepare("INSERT INTO kunden (name, tisch_id) VALUES (?, ?)");
-        $stmt->bind_param("si", $name, $tisch_id);
+        $stmt = $conn->prepare("INSERT INTO kunden (name, tisch_id, zugangscode) VALUES (?, ?, ?)");
+        $stmt->bind_param("si", $name, $tisch_id, $zugangscode);
         if ($stmt->execute()) {
             $kunde_id = $stmt->insert_id;
             $stmt->close();
